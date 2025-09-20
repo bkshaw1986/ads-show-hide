@@ -2,23 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Ads page (DFP header-first, conditional)</title>
+  <title>Conditional Ads Page</title>
 
-  <!-- 1) Load Google Publisher Tag (DFP / GPT) first in the header -->
+  <!-- 1) Load Google Publisher Tag (DFP / GPT) first -->
   <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
 
   <script>
-    // 2) Define slots & basic config early, but DO NOT call googletag.display() yet.
     window.googletag = window.googletag || { cmd: [] };
 
     googletag.cmd.push(function() {
-      // basic config: collapse empty divs so hidden if no ad call happens
+      // Basic config
       googletag.pubads().collapseEmptyDivs(true);
-      googletag.pubads().enableSingleRequest(); // optional: single request mode
+      googletag.pubads().enableSingleRequest();
       googletag.enableServices();
 
-      // define slots (example slots - replace with your ad unit paths and sizes)
-      // note: these calls only register the slots. they don't fetch ads until display() is called.
+      // Define slots (replace with your real ad unit IDs)
       window.slot_top = googletag.defineSlot('/1234567/homepage_leaderboard', [[728,90],[970,90]], 'div-gpt-ad-top')
                         .addService(googletag.pubads());
 
@@ -30,7 +28,7 @@
     });
   </script>
 
-  <!-- Bootstrap CSS (header can include CSS safely) -->
+  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
   <style>
@@ -49,11 +47,11 @@
 </head>
 <body>
   <div class="container my-5">
-    <h3 class="mb-4">Page with conditional ads (DFP header-first)</h3>
+    <h3 class="mb-4">Page with Conditional Ads (0/1 Response)</h3>
 
-    <!-- Ad containers. Keep them hidden until allowed. -->
+    <!-- Ads area -->
     <div id="adsArea">
-      <div id="div-gpt-ad-top" class="ad-placeholder d-none" aria-hidden="true">
+      <div id="div-gpt-ad-top" class="ad-placeholder d-none">
         Top leaderboard ad (hidden)
       </div>
 
@@ -62,7 +60,9 @@
           <div id="div-gpt-ad-mid" class="ad-placeholder d-none">
             In-content ad (hidden)
           </div>
-          <p>Sample content where in-content ad would appear. Replace with real content.</p>
+          <p>
+            Sample content where in-content ad would appear. Replace with your real page content.
+          </p>
         </div>
         <div class="col-md-4">
           <div id="div-gpt-ad-side" class="ad-placeholder d-none">
@@ -72,80 +72,48 @@
       </div>
     </div>
 
+    <!-- No ads message -->
     <div id="noAdsMsg" class="alert alert-warning d-none">
       Ads are not enabled for this session.
     </div>
   </div>
 
-  <!-- jQuery after GPT (header-first requirement satisfied) -->
+  <!-- jQuery -->
   <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 
   <script>
     $(function() {
-      // url to check. using GET and expecting JSON true or { showAds: true }
       var checkUrl = "https://dev.123greetings.com/cgi-bin/test/check_pro.pl";
 
-      // helper to show message and leave ad slots hidden
       function showNoAds(reason) {
         $('#noAdsMsg').removeClass('d-none').text('Ads disabled: ' + reason);
-        // ad divs remain hidden (collapseEmptyDivs will collapse them)
       }
 
-      // helper to show ad containers visually and then call googletag.display to fetch ads
       function enableAdsAndFetch() {
-        // un-hide containers (optional: remove d-none to allow GPT to fill them)
         $('#div-gpt-ad-top, #div-gpt-ad-mid, #div-gpt-ad-side').removeClass('d-none');
 
-        // Wait for googletag to be ready, then call display for each slot
         googletag.cmd.push(function() {
-          // call display for each defined div id to trigger network calls
-          // display only the slots you want to fetch
           googletag.display('div-gpt-ad-top');
           googletag.display('div-gpt-ad-mid');
           googletag.display('div-gpt-ad-side');
-
-          // optional: refresh (not necessary immediately after first display)
-          // googletag.pubads().refresh([window.slot_top, window.slot_incontent, window.slot_sidebar]);
         });
       }
 
-      // perform ajax check
       $.ajax({
         url: checkUrl,
         method: 'GET',
-        dataType: 'json',
+        dataType: 'text',   // <-- treat as plain text
         timeout: 8000,
         success: function(resp) {
-          // possible response shapes:
-          // 1) true
-          // 2) { "showAds": true }
-          // 3) { "result": "true" } etc. -> be permissive
-          var allowed = false;
-
-          if (resp === true) allowed = true;
-          else if (typeof resp === 'object' && resp !== null) {
-            if (resp.showAds === true || resp.showads === true || resp.allowed === true) allowed = true;
-            // also handle string "true"
-            if (!allowed) {
-              for (var k in resp) {
-                if (String(resp[k]).toLowerCase() === 'true') { allowed = true; break; }
-              }
-            }
-          } else if (String(resp).toLowerCase() === 'true') {
-            allowed = true;
-          }
-
-          if (allowed) {
+          resp = $.trim(resp); // remove whitespace/newlines
+          if (resp === "1") {
             enableAdsAndFetch();
           } else {
-            showNoAds('check returned false');
+            showNoAds('check returned 0');
           }
         },
         error: function(xhr, status, err) {
-          // if the check fails (CORS, timeout, network), we should not show ads
-          var reason = 'error: ' + (status || 'unknown');
-          showNoAds(reason);
-          console.warn('Ad check failed:', status, err);
+          showNoAds('error: ' + (status || 'unknown'));
         }
       });
     });
