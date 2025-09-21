@@ -1,82 +1,67 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Conditional Ads Page</title>
-
-  <!-- GPT (Google Publisher Tag) must be first in header -->
-  <script async src="https://securepubads.g.doubleclick.net/tag/js/gpt.js"></script>
-  <script>
-    window.googletag = window.googletag || { cmd: [] };
-
-    googletag.cmd.push(function() {
-      googletag.pubads().collapseEmptyDivs(true);
-      googletag.pubads().enableSingleRequest();
-      googletag.enableServices();
-
-      // Define slots (but won't be displayed unless .pl returns 1)
-      window.slot_top = googletag.defineSlot('/1234567/homepage_leaderboard', [[728,90],[970,90]], 'div-gpt-ad-top')
-                        .addService(googletag.pubads());
-
-      window.slot_sidebar = googletag.defineSlot('/1234567/sidebar_box', [300,250], 'div-gpt-ad-side')
-                             .addService(googletag.pubads());
-
-      window.slot_incontent = googletag.defineSlot('/1234567/incontent', [336,280], 'div-gpt-ad-mid')
-                              .addService(googletag.pubads());
-    });
-  </script>
-
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8">
+  <title>Simple Ads Control</title>
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 </head>
 <body>
-  <div class="container my-5">
-    <h3 class="mb-4">Conditional Ads Example</h3>
-    <div id="adsArea"></div>
-    <div id="noAdsMsg" class="alert alert-warning d-none">No ads for this session.</div>
-  </div>
+  <h3>My Page with Ads</h3>
 
-  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+  <!-- Example ad containers -->
+  <div id="ad1">Ad Slot 1</div>
+  <div id="ad2">Ad Slot 2</div>
+  <div id="ad3">Ad Slot 3</div>
+
   <script>
-    $(function() {
-      var checkUrl = "https://dev.123greetings.com/cgi-bin/test/check_pro.pl";
+    // simple cookie helpers
+    function setCookie(name, value, days) {
+      var d = new Date();
+      d.setTime(d.getTime() + (days*24*60*60*1000));
+      document.cookie = name + "=" + value + ";expires=" + d.toUTCString() + ";path=/";
+    }
 
+    function getCookie(name) {
+      var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      if (match) return match[2];
+      return null;
+    }
+
+    // check ads permission from cookie
+    function canShowAds() {
+      return getCookie("ads_disabled") !== "1";
+    }
+
+    $(function() {
+      // Call your .pl file once
       $.ajax({
-        url: checkUrl,
+        url: "https://dev.123greetings.com/cgi-bin/test/check_pro.pl",
         method: "GET",
-        dataType: "json", // .pl returns "0" or "1"
-		timeout: 8000,
+        dataType: "json",
+		timeout: 5000,
         success: function(resp) {
           resp = $.trim(resp);
-          if (resp === "1") {
-            // Inject ad containers only if allowed
-            /*$("#adsArea").html(`
-              <div id="div-gpt-ad-top" style="margin-bottom:20px;"></div>
-              <div class="row">
-                <div class="col-md-8">
-                  <div id="div-gpt-ad-mid" style="margin-bottom:20px;"></div>
-                  <p>Some sample content here...</p>
-                </div>
-                <div class="col-md-4">
-                  <div id="div-gpt-ad-side"></div>
-                </div>
-              </div>
-            `);*/
-
-			$("#adsArea1").html('');
-			$("#adsArea2").html('');
-			$("#adsArea3").html('');
-
-            googletag.cmd.push(function() {
-              googletag.display("div-gpt-ad-top");
-              googletag.display("div-gpt-ad-mid");
-              googletag.display("div-gpt-ad-side");
-            });
+		  
+          if (resp == 0) {
+            setCookie("ads_disabled", "1", 1); // disable ads for 1 day
           } else {
-            $("#noAdsMsg").removeClass("d-none");
+            setCookie("ads_disabled", "0", 1); // enable ads
+          }
+
+          // Now check cookie for each ad
+          if (!canShowAds()) {
+            $("#ad1, #ad2, #ad3").remove(); // remove ad blocks
+          } else {
+            // here you can load your ad scripts
+            $("#ad1").text("Real Ad 1 loaded");
+            $("#ad2").text("Real Ad 2 loaded");
+            $("#ad3").text("Real Ad 3 loaded");
           }
         },
         error: function() {
-          $("#noAdsMsg").removeClass("d-none").text("Error checking ads eligibility.");
+          // if API fails, treat as disabled (optional)
+          setCookie("ads_disabled", "1", 1);
+          $("#ad1, #ad2, #ad3").remove();
         }
       });
     });
