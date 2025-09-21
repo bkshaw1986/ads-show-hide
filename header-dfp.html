@@ -49,7 +49,7 @@
           resp = $.trim(resp);
           if (resp === "1") {
             // Inject ad containers only if allowed
-            $("#adsArea").html(`
+            /*$("#adsArea").html(`
               <div id="div-gpt-ad-top" style="margin-bottom:20px;"></div>
               <div class="row">
                 <div class="col-md-8">
@@ -60,7 +60,11 @@
                   <div id="div-gpt-ad-side"></div>
                 </div>
               </div>
-            `);
+            `);*/
+
+			$("#adsArea1").html('');
+			$("#adsArea2").html('');
+			$("#adsArea3").html('');
 
             googletag.cmd.push(function() {
               googletag.display("div-gpt-ad-top");
