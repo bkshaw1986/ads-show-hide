@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Simple Ads Control</title>
+  <title>Ads Control with Cookie</title>
   <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 </head>
 <body>
@@ -14,7 +14,7 @@
   <div id="ad3">Ad Slot 3</div>
 
   <script>
-    // simple cookie helpers
+    // cookie helpers
     function setCookie(name, value, days) {
       var d = new Date();
       d.setTime(d.getTime() + (days*24*60*60*1000));
@@ -23,43 +23,47 @@
 
     function getCookie(name) {
       var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
-      if (match) return match[2];
-      return null;
+      return match ? match[2] : null;
     }
 
-    // check ads permission from cookie
+    // check cookie to decide ads visibility
     function canShowAds() {
       return getCookie("ads_disabled") !== "1";
     }
 
     $(function() {
-      // Call your .pl file once
+      // If cookie already exists, skip API call
+      if (getCookie("ads_disabled") !== null) {
+        if (!canShowAds()) {
+          $("#ad1, #ad2, #ad3").remove();
+        } else {
+          $("#ad1").text("Real Ad 1 loaded");
+          $("#ad2").text("Real Ad 2 loaded");
+          $("#ad3").text("Real Ad 3 loaded");
+        }
+        return;
+      }
+
+      // Call .pl only if cookie not set
       $.ajax({
         url: "https://dev.123greetings.com/cgi-bin/test/check_pro.pl",
         method: "GET",
-        dataType: "json",
-		timeout: 5000,
+        dataType: "json", 
+	timeout: 5000,
         success: function(resp) {
-          resp = $.trim(resp);
-		  
-          if (resp == 0) {
-            setCookie("ads_disabled", "1", 1); // disable ads for 1 day
+          // assuming resp = 0 or 1
+          if (resp == 1) {
+            setCookie("ads_disabled", "1", 1);
+            $("#ad1, #ad2, #ad3").remove();
           } else {
-            setCookie("ads_disabled", "0", 1); // enable ads
-          }
-
-          // Now check cookie for each ad
-          if (!canShowAds()) {
-            $("#ad1, #ad2, #ad3").remove(); // remove ad blocks
-          } else {
-            // here you can load your ad scripts
+            setCookie("ads_disabled", "0", 1);
             $("#ad1").text("Real Ad 1 loaded");
             $("#ad2").text("Real Ad 2 loaded");
             $("#ad3").text("Real Ad 3 loaded");
           }
         },
         error: function() {
-          // if API fails, treat as disabled (optional)
+          // If API fails, better to disable ads
           setCookie("ads_disabled", "1", 1);
           $("#ad1, #ad2, #ad3").remove();
         }
